@@ -167,7 +167,7 @@ that does not exist reads as authoritative and sends the model at nothing. So
 `why-no-download` is not registered without an `*arr`, and the tool names inside
 both prompts expand to the ones this install actually has.
 
-The result is 9 tools on a default install and up to 75 fully configured:
+The result is 9 tools on a default install and up to 76 fully configured:
 
 | Family | Always | Needs config | Confirms |
 |---|---|---|---|
@@ -178,7 +178,7 @@ The result is 9 tools on a default install and up to 75 fully configured:
 | Sonarr (18) | – | all — **URL + API key** | add, season_monitor, search, remove, queue_remove, release_grab, import, series_edit, episode_monitor |
 | Jellyfin (12) | – | all — **URL + API key** | library_scan, session_stop, session_message, user_preferences_set, user_access_set, transcoding_set, mark_played |
 | Prowlarr (10) | – | all — **URL + API key** | indexer_update, indexer_add, indexer_remove, apps_sync |
-| Bazarr (9) | – | all — **URL + API key** | search, download, sync, profile_set, providers_reset |
+| Bazarr (10) | – | all — **URL + API key** | search, download, sync, profile_set, providers_reset |
 
 The five service families gate independently: one configured and the others not
 is a normal install, and each has its own key. Jellyfin has a second axis the
@@ -564,6 +564,7 @@ silent. Silent truncation reads as a complete answer.
 | Bazarr API timeout | 15s | answered from its own database |
 | Bazarr provider search / download | 3 min | fans out to every subtitle site over the internet, and older versions answer only once all have |
 | Bazarr audio sync | 5 min | decodes the whole audio track |
+| Bazarr library sync wait | 90s, read every 2s | Bazarr answers before the sync has run, so the item named is read back until it arrives |
 | Bazarr manual-search ids | 30 min, 2 000 kept | the token behind each stays on this server (§ [bazarr](modules/bazarr.md#a-manual-search-result-never-leaves-the-server)) |
 | Jellyfin session window | 900s | anything playing checks in constantly, so this excludes only idle devices |
 | Radarr/Sonarr lookup timeout | 30s | proxied to a metadata service over the internet |

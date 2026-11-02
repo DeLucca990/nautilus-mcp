@@ -304,13 +304,15 @@ func writeBazarrConfiguration(b *strings.Builder) {
 	fmt.Fprintf(b, "Registered against %s. Read-only tools: %s.\n\n", arrBaseURL(bazarr.BaseURL), reads)
 
 	if bazarr.ReadOnly() {
-		fmt.Fprintf(b, "The writes (%s) are **not** registered: `%s` is set. Unset it to "+
-			"restore them.\n\n", writes, bazarr.ReadOnlyEnv)
+		fmt.Fprintf(b, "The writes (%s, and `bazarr_library_sync`) are **not** registered: `%s` "+
+			"is set. Unset it to restore them.\n\n", writes, bazarr.ReadOnlyEnv)
 		return
 	}
 
-	fmt.Fprintf(b, "Writes registered, each asking before it acts: %s. The language profiles and "+
-		"language codes this instance has are at `%s`.\n\n", writes, resourceBazarrProfiles)
+	fmt.Fprintf(b, "Writes registered, each asking before it acts: %s. Also `bazarr_library_sync`, "+
+		"which does not ask: it only runs now the copy of Radarr's or Sonarr's library Bazarr makes "+
+		"on its own schedule. The language profiles and language codes this instance has are at "+
+		"`%s`.\n\n", writes, resourceBazarrProfiles)
 }
 
 // Prowlarr has sync profiles and tags where the *arrs have quality profiles

@@ -7,7 +7,7 @@ a Telegram bot that is a client of it. A single static Go binary each, speaking 
 
 ## Tools
 
-**75 tools — an overview, a digest and seven families — and never all at once.** A default
+**76 tools — an overview, a digest and seven families — and never all at once.** A default
 install registers 9; the rest appear only when the environment authorises them. Full specifications,
 one page per family:
 
@@ -21,7 +21,7 @@ one page per family:
 | **Sonarr** | library, missing episodes, queue, lookup, health, interactive search, import, history, calendar, and nine writes | [docs/tools/SONARR.md](tools/SONARR.md) |
 | **Prowlarr** | indexer status and tests, app sync, direct search, and four writes | [docs/tools/PROWLARR.md](tools/PROWLARR.md) |
 | **Jellyfin** | sessions, health, users, library search, activity log, and seven writes | [docs/tools/JELLYFIN.md](tools/JELLYFIN.md) |
-| **Bazarr** | subtitle status, wanted list, providers, manual search, and five writes | [docs/tools/BAZARR.md](tools/BAZARR.md) |
+| **Bazarr** | subtitle status, wanted list, providers, manual search, and six writes | [docs/tools/BAZARR.md](tools/BAZARR.md) |
 
 What they are for, in one line each: [docs/tools/README.md](tools/README.md).
 
@@ -198,10 +198,13 @@ service lines above against the `.env` you expected to be read.
 
 ## Approving actions
 
-Thirty-four tools change something, and none of them act on the first call. They describe the
-operation, wait for a decision, and bind the approval to that exact operation with a
+Thirty-five tools change something, and thirty-four of them do not act on the first call. They
+describe the operation, wait for a decision, and bind the approval to that exact operation with a
 fingerprint — so approving `ls /config` cannot execute `rm -rf /config`, approving one
 film cannot add another, and approving a search of season 3 cannot search all nine seasons.
+
+The exception is `bazarr_library_sync`, which only runs now the copy of Radarr's or Sonarr's
+library that Bazarr makes on its own schedule anyway.
 
 The server asks, not the client. The request reaches the user through MCP elicitation, showing
 the exact operation, per command: the [Telegram bot](#on-telegram) turns it into a message with
@@ -334,7 +337,7 @@ protocol and keeping sessions are mutually exclusive, and there is no switch for
 Restarting the process invalidates nothing, since there is no session id for a client to lose.
 
 A client on an older protocol still connects, and every read-only tool answers it. What it
-cannot do is the [thirty-four writes](#approving-actions): it declares its capabilities once, in
+cannot do is the [thirty-four writes that ask first](#approving-actions): it declares its capabilities once, in
 `initialize`, and a sessionless server keeps nothing from that — so the server cannot tell
 whether it could be shown a confirmation, and it does not act without one. It refuses with
 `this client ("") cannot show a confirmation coming from the server`, where the empty name is

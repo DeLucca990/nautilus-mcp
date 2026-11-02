@@ -118,6 +118,10 @@ type mockBazarr struct {
 
 	candidates []map[string]any
 
+	tasks       []map[string]any
+	onRunTask   func(taskID string)
+	onListTasks func()
+
 	// what was sent
 	calls []string
 	forms map[string]url.Values
@@ -144,6 +148,10 @@ func newMockBazarr(t *testing.T) *mockBazarr {
 		series:    map[int]map[string]any{},
 		episodes:  map[int]map[string]any{},
 		forms:     map[string]url.Values{},
+		tasks: []map[string]any{
+			{"job_id": "update_movies", "name": "Sync with Radarr", "interval": "every 1 hour", "job_running": false},
+			{"job_id": "update_series", "name": "Sync with Sonarr", "interval": "every 1 hour", "job_running": false},
+		},
 	}
 
 	mux := http.NewServeMux()
@@ -250,6 +258,19 @@ func newMockBazarr(t *testing.T) *mockBazarr {
 	})
 	handle("/api/subtitles", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
+	})
+	handle("/api/system/tasks", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			if m.onRunTask != nil {
+				m.onRunTask(m.forms["POST /api/system/tasks"].Get("taskid"))
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		if m.onListTasks != nil {
+			m.onListTasks()
+		}
+		writeJSON(w, map[string]any{"data": nonNilList(m.tasks)})
 	})
 
 	m.Server = httptest.NewServer(mux)

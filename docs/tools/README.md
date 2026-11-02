@@ -13,10 +13,10 @@ they are built the way they are, see [`docs/modules/`](../modules/) and
 | Radarr | 15 — 8 read-only, 7 writes | [RADARR.md](RADARR.md) |
 | Sonarr | 18 — 9 read-only, 9 writes | [SONARR.md](SONARR.md) |
 | Jellyfin | 12 — 5 read-only, 7 writes | [JELLYFIN.md](JELLYFIN.md) |
-| Bazarr | 9 — 4 read-only, 5 writes | [BAZARR.md](BAZARR.md) |
+| Bazarr | 10 — 4 read-only, 6 writes | [BAZARR.md](BAZARR.md) |
 | Prowlarr | 10 — 6 read-only, 4 writes | [PROWLARR.md](PROWLARR.md) |
 
-**75 tools in total, but never all at once.** A default install registers
+**76 tools in total, but never all at once.** A default install registers
 **9**: the overview, the digest, the five system tools and the two read-only Docker ones.
 The rest appear only when the environment says so — the Docker actions need an
 allowlist, and the Radarr, Sonarr, Prowlarr, Jellyfin and Bazarr families each need a URL and an
@@ -176,10 +176,13 @@ containers, the download queue, the movie library, the series library — is
 sorted by severity rather than by name, so the reason someone is looking is at
 the top.
 
-**Writes ask first.** The thirty-four tools that change something never act on the
-first call. They describe the operation, wait for a human decision, and bind the
+**Writes ask first.** Thirty-four of the thirty-five tools that change something never
+act on the first call. They describe the operation, wait for a human decision, and bind the
 approval to the exact operation with a fingerprint. See
 [docs/ARCHITECTURE.md §3](../ARCHITECTURE.md#3-waiting-for-a-user-response).
+The one that does not is `bazarr_library_sync`: it only runs now the copy of Radarr's or
+Sonarr's library that Bazarr makes on its own schedule, so there is nothing for a human to
+weigh that waiting for its next scheduled run would not do anyway.
 
 | Tool | Family | Guarded by |
 | --- | --- | --- |
@@ -206,6 +209,7 @@ approval to the exact operation with a fingerprint. See
 | `bazarr_subtitle_sync` | Bazarr | confirmation |
 | `bazarr_language_profile_set` | Bazarr | confirmation |
 | `bazarr_providers_reset` | Bazarr | confirmation |
+| `bazarr_library_sync` | Bazarr | nothing — see above |
 | `prowlarr_indexer_update` | Prowlarr | confirmation |
 | `prowlarr_indexer_add` | Prowlarr | confirmation |
 | `prowlarr_indexer_remove` | Prowlarr | confirmation |

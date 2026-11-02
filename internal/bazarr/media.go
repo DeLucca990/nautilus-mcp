@@ -135,21 +135,34 @@ func (c *client) movie(ctx context.Context, radarrID int) (Movie, error) {
 			"or bazarr_subtitle_status with 'term' finds one by title")
 	}
 
+	m, ok, err := c.findMovie(ctx, radarrID)
+	if err != nil {
+		return Movie{}, err
+	}
+	if !ok {
+		return Movie{}, fmt.Errorf("bazarr has no movie with Radarr id %d. Bazarr copies only "+
+			"films that have a file, and on a schedule: one Radarr has not downloaded is not here, "+
+			"and one downloaded in the last few minutes may not have arrived yet — "+
+			"bazarr_library_sync brings it over now. Otherwise the number is probably a TMDB id, "+
+			"which is not what Bazarr uses", radarrID)
+	}
+	return m, nil
+}
+
+func (c *client) findMovie(ctx context.Context, radarrID int) (Movie, bool, error) {
 	var page struct {
 		Data []movieJSON `json:"data"`
 	}
 	q := url.Values{"radarrid[]": {strconv.Itoa(radarrID)}}
 	if err := c.get(ctx, "/movies", q, &page); err != nil {
-		return Movie{}, err
+		return Movie{}, false, err
 	}
 	for _, r := range page.Data {
 		if r.RadarrID == radarrID {
-			return r.toMovie(), nil
+			return r.toMovie(), true, nil
 		}
 	}
-	return Movie{}, fmt.Errorf("bazarr has no movie with Radarr id %d. Bazarr copies Radarr's "+
-		"library on a schedule, so a film added in the last few minutes may not have arrived "+
-		"yet; otherwise the number is probably a TMDB id, which is not what Bazarr uses", radarrID)
+	return Movie{}, false, nil
 }
 
 // GetSeries reads one series by its Sonarr id.
@@ -172,21 +185,33 @@ func (c *client) series(ctx context.Context, seriesID int) (Series, error) {
 			"or bazarr_subtitle_status with 'term' finds one by title")
 	}
 
+	s, ok, err := c.findSeries(ctx, seriesID)
+	if err != nil {
+		return Series{}, err
+	}
+	if !ok {
+		return Series{}, fmt.Errorf("bazarr has no series with Sonarr id %d. Bazarr copies Sonarr's "+
+			"library on a schedule, so a show added in the last few minutes may not have arrived "+
+			"yet — bazarr_library_sync brings it over now. Otherwise the number is probably a TVDB "+
+			"id, which is not what Bazarr uses", seriesID)
+	}
+	return s, nil
+}
+
+func (c *client) findSeries(ctx context.Context, seriesID int) (Series, bool, error) {
 	var page struct {
 		Data []seriesJSON `json:"data"`
 	}
 	q := url.Values{"seriesid[]": {strconv.Itoa(seriesID)}}
 	if err := c.get(ctx, "/series", q, &page); err != nil {
-		return Series{}, err
+		return Series{}, false, err
 	}
 	for _, r := range page.Data {
 		if r.SonarrSeriesID == seriesID {
-			return r.toSeries(), nil
+			return r.toSeries(), true, nil
 		}
 	}
-	return Series{}, fmt.Errorf("bazarr has no series with Sonarr id %d. Bazarr copies Sonarr's "+
-		"library on a schedule, so a show added in the last few minutes may not have arrived "+
-		"yet; otherwise the number is probably a TVDB id, which is not what Bazarr uses", seriesID)
+	return Series{}, false, nil
 }
 
 // GetEpisode reads one episode by its Sonarr episode id.
@@ -217,7 +242,8 @@ func (c *client) episode(ctx context.Context, episodeID int) (Episode, error) {
 		}
 	}
 	return Episode{}, fmt.Errorf("bazarr has no episode with Sonarr id %d — Bazarr only knows "+
-		"episodes that have a file on disk, and copies Sonarr on a schedule", episodeID)
+		"episodes that have a file on disk, and copies Sonarr on a schedule; bazarr_library_sync "+
+		"with the episode's series_id brings a new one over now", episodeID)
 }
 
 func (c *client) seriesEpisodes(ctx context.Context, seriesID int) ([]Episode, error) {

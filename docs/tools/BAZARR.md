@@ -1,6 +1,6 @@
 # Bazarr tools
 
-Nine tools over Bazarr's HTTP API — four that read, five that write. None of
+Ten tools over Bazarr's HTTP API — four that read, six that write. None of
 them exist until the server is told where the machine is and given an API key.
 Design notes: [docs/modules/bazarr.md](../modules/bazarr.md).
 
@@ -15,6 +15,7 @@ Design notes: [docs/modules/bazarr.md](../modules/bazarr.md).
 | `bazarr_subtitle_sync` | `radarr_id` / `episode_id`, `language`, `forced`, `hi`, `shift_ms` | fixes a subtitle's timing, by the audio or by a fixed shift | **yes** |
 | `bazarr_language_profile_set` | `radarr_id` / `series_id`, `profile` | changes which subtitles Bazarr wants for a movie or series | **yes** |
 | `bazarr_providers_reset` | — | clears every provider throttle | **yes** |
+| `bazarr_library_sync` | `source` / `radarr_id` / `series_id` | copies Radarr's or Sonarr's library into Bazarr now, and waits for the item named | **yes**, without asking |
 
 ## Configuration
 
@@ -326,3 +327,53 @@ the site asking Bazarr to back off, and `AuthenticationError` means the login is
 wrong — both come straight back on the next query. The result names the ones it
 just cleared that will, so the reset is not mistaken for a repair. With nothing
 throttled, it is refused.
+
+---
+
+## `bazarr_library_sync`
+
+| Parameter | Type | Meaning |
+| --- | --- | --- |
+| `source` | string | `radarr` or `sonarr`; implied by the id |
+| `radarr_id` | integer | the movie Bazarr is missing, by Radarr's id |
+| `series_id` | integer | the series Bazarr is missing, by Sonarr's id |
+
+The *Run* button next to *Sync with Radarr* or *Sync with Sonarr* on Bazarr's
+System → Tasks page: the copy of the *arr's library that Bazarr otherwise makes
+on its own schedule, now. It is the answer to *"bazarr has no movie with Radarr
+id 42"* when Radarr does have it.
+
+**It does not ask first** — the only write in the server that does not. It
+changes nothing in Radarr or Sonarr, downloads no subtitle, and does nothing
+Bazarr would not do on its own at the task's next scheduled run; asking would
+cost a button press to bring forward something already scheduled.
+
+With an id, it waits for that item, reading Bazarr every 2 seconds for up to 90:
+
+```
+Dune (2021) [radarr_id 42] is in Bazarr now, after bazarr's Sync with Radarr (6s)
+on its own, bazarr runs it every 1 hour
+
+language profile: PT+EN
+...
+```
+
+The `outcome` says how it ended:
+
+| `outcome` | Meaning |
+| --- | --- |
+| `arrived` | the item is in Bazarr now, returned with its subtitles |
+| `already_there` | it was there before; no sync was started |
+| `still_missing` | the sync was seen to finish without it |
+| `pending` | not there after 90 seconds, and the sync may still be running |
+| `started` | no item was named; the sync runs in the background |
+
+A film still missing after a sync is usually one of two things, and the warnings
+name both: **Radarr has not downloaded it** — Bazarr copies only films with a
+file, so it arrives when the download is imported, however often this runs — or
+**the number is a TMDB id** (a TVDB id for a series), which Bazarr does not use.
+`radarr_library_status` answers both.
+
+A sync already running is left to finish instead of being started again. A
+Bazarr with no *Sync with Radarr* task is not using Radarr at all (Settings →
+Radarr is off), and the call is refused saying so.

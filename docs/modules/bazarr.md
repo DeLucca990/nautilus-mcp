@@ -55,9 +55,10 @@ these tools take — nothing is translated between families. Two things follow,
 and both are said in the errors rather than left to be discovered:
 
 - **Bazarr copies those libraries on a schedule.** A film added a minute ago
-  may not be here yet.
-- **Bazarr only knows episodes with a file.** An episode that has not
-  downloaded has nothing to subtitle.
+  may not be here yet; [`bazarr_library_sync`](#syncing-the-library) brings it
+  over now.
+- **Bazarr only knows what has a file.** A film Radarr has not downloaded is not
+  copied at all, and neither is an episode: there is nothing to subtitle.
 
 An unknown `radarr_id` also says the number was probably a TMDB id — the same
 mix-up [the Radarr module](radarr.md#two-ids-one-number-space) resolves, and one
@@ -133,6 +134,37 @@ cache under an 8-character id derived from the item, provider and token, and
 
 The confirmation fingerprint covers the token, not only the id, so an id that
 somehow came to mean a different subtitle cannot ride an earlier approval.
+
+---
+
+## Syncing the library
+
+Bazarr's copy of Radarr and Sonarr is two scheduled tasks, `update_movies`
+(*Sync with Radarr*) and `update_series` (*Sync with Sonarr*), on top of the
+SignalR feed that tells it about most changes as they happen. When that feed
+misses one, the copy catches up only on the next run of the task, whose
+interval is a Bazarr setting. `bazarr_library_sync` runs the task now, through `POST /system/tasks`
+with its `taskid` — the same call as the *Run* button on System → Tasks.
+
+Three things about that endpoint shape the tool:
+
+- **It answers `204` before the task has run.** It only moves the job's next run
+  to now. So with an id, the tool reads the item back until it is there, as the
+  [subtitle search](#searching-not-yet-is-not-not-found) does.
+- **It says nothing about when the task ends.** `GET /system/tasks` has a
+  `job_running` flag, and the tool reads it before the item on every pass: once
+  it has been seen running and then not, an item still missing on the read that
+  follows was not copied, and the tool stops early. A short sync can start and
+  finish between two reads, so never seeing it run proves nothing, and that case
+  waits out the 90 seconds and says `pending`.
+- **A task that does not exist is a server error, not a refusal.** Bazarr
+  registers *Sync with Radarr* only while it is using Radarr. The tool reads the
+  task list first and refuses with the setting to look at, instead of passing on
+  a 500. A task already running is left alone: Bazarr would skip a second run of
+  it anyway.
+
+It is the one write in the server that does not ask first. Everything it does,
+Bazarr does on its own at the task's next run; a confirmation would weigh nothing.
 
 ---
 

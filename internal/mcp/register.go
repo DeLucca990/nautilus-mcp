@@ -1114,6 +1114,25 @@ func registerBazarrTools(s *sdk.Server) {
 			"usually be throttled again on its next query, and the result says which ones those " +
 			"are. Asks the user first, listing each throttle.",
 	}, handleBazarrProvidersReset)
+
+	sdk.AddTool(s, &sdk.Tool{
+		Name: "bazarr_library_sync",
+		Annotations: &sdk.ToolAnnotations{
+			Title:           "Sync Bazarr with Radarr or Sonarr",
+			ReadOnlyHint:    false,
+			DestructiveHint: ptr(false),
+			OpenWorldHint:   ptr(false),
+			IdempotentHint:  true,
+		},
+		Description: "Runs Bazarr's Sync with Radarr or Sync with Sonarr now — the copy of their " +
+			"libraries Bazarr otherwise makes on its own schedule. Use it when a Bazarr tool says it " +
+			"has no movie or series that Radarr or Sonarr has. With 'radarr_id' or 'series_id' it " +
+			"waits, up to a minute and a half, until that item arrives, and returns it with its " +
+			"subtitles; with only 'source' it starts the whole sync and returns. Bazarr copies only " +
+			"films that have a file, so one Radarr has not downloaded does not arrive however often " +
+			"this runs. Changes nothing in Radarr or Sonarr and searches for no subtitles. Does not " +
+			"ask the user first: it only brings forward what Bazarr would do on its own.",
+	}, handleBazarrLibrarySync)
 }
 
 // PROWLARR tools
